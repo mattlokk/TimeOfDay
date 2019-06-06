@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <style>
+        div.day {
+            width: 3px;
+            background-color: #3258a7;
+            display: inline-block;
+        }
+
+            div.day.current {
+                background-color: #ff0000;
+            }
+    </style>
+    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/themes/smoothness/jquery-ui.css" />
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.2/jquery-ui.min.js"></script>
+    <script type="text/javascript">
+
+		var latitude;
+		
+        $(function () {
+            var today = new Date();
+            today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            var jan1 = new Date(today.getFullYear(), 0, 1)
+            daysSince = Math.ceil((today - jan1) / (1000 * 60 * 60 * 24));
+
+            calc(48.5, daysSince);
+
+            $("#divDaySlider").slider({
+                min: 1,
+                max: 365,
+                value: daysSince,
+                slide: function (event, ui) {
+                    calc(latitude, ($(event.target).slider("value")*1 -1));
+                }
+            });
+        });
+		
+        function calc(lat, days) {		
+			latitude = lat;
+            if (lat) $("#txtLat").val(lat);
+            var L = $("#txtLat").val();
+
+            var pi = 3.1415926;
+            var divOutput = $("#divOutput");
+            var divDeriv = $("#divDeriv");
+
+            divOutput.empty();
+            divDeriv.empty();	
+
+            var daysSince;
+			if (days)
+				daysSince = days;
+			else{
+				var today = new Date();
+				today = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+				var jan1 = new Date(today.getFullYear(), 0, 1)
+				daysSince = Math.ceil((today - jan1) / (1000 * 60 * 60 * 24));
+			}
+
+            var prevD = 0;
+            var pastHump = false;
+            var maxHeight = 0;
+			
+            var today = new Date();
+            var jan1 = new Date(today.getFullYear(), 0, 1)
+            var selectedDate = new Date();
+            selectedDate.setDate(jan1.getDate() + days);
+
+            for (var J = 0; J < 365; J++) {
+                var P = Math.asin(0.39795 * Math.cos(0.2163108 + 2 * Math.atan(0.9671396 * Math.tan(0.00860 * (J - 186)))));
+                var D = 24 - (24 / pi) * Math.acos((Math.sin(0.8333 * pi / 180) + Math.sin(L * pi / 180) * Math.sin(P)) / (Math.cos(L * pi / 180) * Math.cos(P)));
+                var div = $("<div>");
+                div.attr('id', 'divDay' + J);
+                div.addClass('day');
+                if (J == daysSince) {
+                    div.addClass('current');
+                    $("#spanDayMarker").text((selectedDate.getMonth() + 1) + '/' + selectedDate.getDate() + ' (' + (Math.round(D * 100) / 100) + ' hrs)');
+                    $("#spanDayMarker").css("margin-left", (daysSince * 3) + 10 + 'px');
+                }
+                div.css('height', Math.round(D * 20) + 'px');
+                divOutput.append(div);
+                if (J > 0) {
+                    var div = $("<div>");
+                    var height = Math.round(((D - prevD) * 2000));
+                    if (height > 0) {
+                        div.css('height', height + 'px');
+                    }
+                    else {
+                        div.css('margin-bottom', height + 'px');
+                        div.css('height', (height * -1) + 'px');
+                    }
+                    div.addClass('day');
+                    if (J == daysSince) {
+                        div.addClass('current');
+                        $("#spanDerivDayMarker").text((selectedDate.getMonth() + 1) + '/' + selectedDate.getDate() + ' (' + (Math.round(((D - prevD) * 60) * 100) / 100) + ' min change)');
+                        $("#spanDerivDayMarker").css("margin-left", (daysSince * 3) + 10 + 'px');
+                        if (height < 0) {
+                            $("#spanDerivDayMarker").css("background-color", "#fff");
+                            $("#spanDerivDayMarker").css("opacity", 0.8);
+                        }
+                    }
+                    divDeriv.append(div);
+                }
+
+                if (J > 100 && D < prevD && !pastHump) {
+                    $("#spanMaxLength").text('max: ' + (Math.round(prevD * 100) / 100) + ' hrs');
+                    pastHump = true;
+                    maxHeight = Math.round(D * 20);
+                }
+
+                if (J > 100 && D > prevD && pastHump) {
+                    $("#spanMinLength").text('min: ' + (Math.round(prevD * 100) / 100) + ' hrs');
+                    $("#spanMinLength").css('top', ((maxHeight - Math.round(D * 20)) + 30) + 'px');
+                }
+
+                prevD = D;
+            }
+        }
+    </script>
+</head>
+<body>
+    Lattitude: <input type="text" id="txtLat" value="48.5" />
+    <a href="#" onclick="calc(27)">27</a>,
+    <a href="#" onclick="calc(48.5)">48.5</a>
+    <br />
+    <input type="button" value="calc" onclick="calc()" /><br />
+    <span id="spanMaxLength" style="position: absolute; top: 30px; left: 500px;"></span>
+    <span id="spanMinLength" style="position: absolute; left: 1060px;"></span>
+    <div id="divOutput" style="margin-left: 20px;"></div>
+    <div id="divDaySlider" style="margin-left: 20px;width: 1095px"></div>
+    <span id="spanDayMarker"></span>
+    <br /><br /><br />
+    <div id="divDeriv" style="margin-left: 20px"></div>
+    <span id="spanDerivDayMarker"></span>
+</body>
+</html>
